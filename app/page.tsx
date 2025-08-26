@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -30,6 +31,7 @@ import {
   Home,
   FileText,
   ChevronRight,
+  Monitor,
 } from "lucide-react"
 
 // Sample data for charts
@@ -77,6 +79,13 @@ const menuItems = [
     ],
   },
   {
+    title: "IT Requests",
+    icon: Monitor,
+    sections: [
+      { name: "Statistics", key: "it-statistics", isExternal: true, href: "/it-statistics" },
+    ],
+  },
+  {
     title: "Sales",
     icon: DollarSign,
     sections: [
@@ -116,6 +125,15 @@ const menuItems = [
 export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState("overview")
   const [expandedModule, setExpandedModule] = useState("Dashboard")
+  const router = useRouter()
+
+  const handleSectionClick = (section: any) => {
+    if (section.isExternal && section.href) {
+      router.push(section.href)
+    } else {
+      setActiveSection(section.key)
+    }
+  }
 
   const renderContent = () => {
     switch (activeSection) {
@@ -316,7 +334,7 @@ export default function AdminDashboard() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
                       outerRadius={120}
                       fill="#8884d8"
                       dataKey="value"
@@ -418,7 +436,7 @@ export default function AdminDashboard() {
                             ? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-r-2 border-blue-500"
                             : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
                         }`}
-                        onClick={() => setActiveSection(section.key)}
+                        onClick={() => handleSectionClick(section)}
                       >
                         {section.name}
                       </Button>
