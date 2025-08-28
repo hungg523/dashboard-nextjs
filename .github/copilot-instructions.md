@@ -1,0 +1,2 @@
+- Luôn phản hồi bằng tiếng Việt
+- Không tạo các file test, nếu có khi test xong phải xoá ngay

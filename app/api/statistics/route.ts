@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     
     console.log(`Fetching statistics from ${tuNgay} to ${denNgay}`)
     
-    const apiUrl = `http://192.168.10.116:8001/api/Chat/statistics?tuNgay=${tuNgay}&denNgay=${denNgay}`
+    const apiUrl = `http://192.168.10.31:8001/api/Chat/statistics?tuNgay=${tuNgay}&denNgay=${denNgay}`
     
     const response = await fetch(apiUrl, {
       method: 'GET',

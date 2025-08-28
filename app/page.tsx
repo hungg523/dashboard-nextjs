@@ -32,6 +32,7 @@ import {
   FileText,
   ChevronRight,
   Monitor,
+  MessageCircle,
 } from "lucide-react"
 
 // Sample data for charts
@@ -83,6 +84,13 @@ const menuItems = [
     icon: Monitor,
     sections: [
       { name: "Statistics", key: "it-statistics", isExternal: true, href: "/it-statistics" },
+    ],
+  },
+  {
+    title: "Chat Support",
+    icon: MessageCircle,
+    sections: [
+      { name: "IT Chatbot", key: "chat", isExternal: true, href: "/chat" },
     ],
   },
   {
