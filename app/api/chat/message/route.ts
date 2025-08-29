@@ -12,18 +12,45 @@ const httpsAgent = new https.Agent({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { message } = body
+    const { message, idNhanVien, moduleName } = body
+    
+    // Validation
+    if (!message) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Tin nhắn không được để trống', 
+          data: null, 
+          errors: 'Message is required', 
+          statusCode: 400 
+        },
+        { status: 400 }
+      )
+    }
+
+    if (!idNhanVien) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'ID nhân viên không được để trống', 
+          data: null, 
+          errors: 'Employee ID is required', 
+          statusCode: 400 
+        },
+        { status: 400 }
+      )
+    }
     
     const requestData = {
       message: message,
-      idNhanVien: 395,
-      moduleName: "it"
+      idNhanVien: idNhanVien,
+      moduleName: moduleName || "it"
     }
     
     console.log('Sending message to chat API:', requestData)
     
     // Use fetch with custom agent for HTTPS
-    const response = await fetch('https://localhost:7040/api/Chat/message', {
+    const response = await fetch('http://192.168.10.135:8001/api/Chat/message', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

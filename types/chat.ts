@@ -14,6 +14,18 @@ export interface ChatMessage {
   endedDate: string | null
 }
 
+export interface ChatSession {
+  userId: string
+  moduleCode: string
+  startTime: string
+  endTime: string | null
+  status: 'open' | 'closed'
+  intentSummary: string | null
+  messages: ChatMessage[]
+  id: number
+  createdAt: string
+}
+
 export interface ChatResponse {
   response: string
   sessionId: string
@@ -35,10 +47,4 @@ export interface ApiResponse<T> {
 export interface MessagesResponse {
   messages: ChatMessage[]
   count: number
-}
-
-export interface SendMessageRequest {
-  message: string
-  idNhanVien: number
-  moduleName: string
 }

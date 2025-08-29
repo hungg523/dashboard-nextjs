@@ -11,11 +11,24 @@ const httpsAgent = new https.Agent({
 
 export async function GET(request: NextRequest, { params }: { params: { sessionId: string } }) {
   try {
-    const sessionId = 2
+    const sessionId = params.sessionId
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Session ID không được để trống', 
+          data: null, 
+          errors: 'Session ID is required', 
+          statusCode: 400 
+        },
+        { status: 400 }
+      )
+    }
     
     console.log('Fetching messages for session:', sessionId)
     
-    const response = await fetch(`https://localhost:7040/api/Chat/session/${sessionId}/messages`, {
+    const response = await fetch(`http://192.168.10.135:8001/api/Chat/session/${sessionId}/messages`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
