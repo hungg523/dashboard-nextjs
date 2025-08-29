@@ -2,7 +2,7 @@
 export { chatService } from './chat.service';
 
 // Export interfaces from services
-export type { SuggestionResponse } from './chat.service';
+export type { SuggestionResponse, PaginatedMessagesResponse } from './chat.service';
 
 // Re-export types for convenience
 export type {
@@ -10,4 +10,5 @@ export type {
   ChatResponse,
   ApiResponse,
   MessagesResponse,
+  PaginatedMessagesResponse as PaginatedMessages,
 } from '@/types/chat';

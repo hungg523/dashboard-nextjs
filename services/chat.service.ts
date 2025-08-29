@@ -18,6 +18,15 @@ export interface SuggestionResponse {
   tips: string[]
 }
 
+// Interface cho paginated messages response
+export interface PaginatedMessagesResponse {
+  messages: ChatMessage[]
+  count: number
+  hasMore: boolean
+  nextBeforeMessageId: number | null
+  paginationInfo: string
+}
+
 class ChatService {
   private apiUrlV1 = `${environment.apiUrlV1}/api/Chat`;
   private apiUrlV1Lower = `${environment.apiUrlV1}/api/chat`; // fallback với lowercase
@@ -36,62 +45,137 @@ class ChatService {
 
   // Tạo hoặc lấy session cho user
   async getOrCreateSession(userId: string): Promise<ChatSession> {
-    const request = new Request('/api/chat/session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ userId }),
-    });
+    try {
+      const request = new Request(`${environment.apiUrlV1}/api/Chat/session/get-or-create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Loại bỏ credentials để tránh CORS issues
+        // credentials: 'include',
+        body: JSON.stringify({ userId }),
+      });
 
-    const response = await fetch(request);
-    if (!response.ok) {
-      throw new Error(`Không thể tạo/lấy session: ${response.statusText}`);
+      const response = await fetch(request);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data: { success: boolean; data: ChatSession; message?: string } = await response.json();
+      console.log('Session response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Tạo/lấy session thất bại');
+      }
+
+      return data.data;
+    } catch (error) {
+      console.error('Error in getOrCreateSession:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Không thể tạo/lấy session: ${errorMessage}`);
     }
-
-    const data: { success: boolean; data: ChatSession; message?: string } = await response.json();
-    if (!data.success) {
-      throw new Error(data.message || 'Tạo/lấy session thất bại');
-    }
-
-    return data.data;
   }
 
-  // Lấy danh sách tin nhắn theo session
+  // Lấy tin nhắn mới nhất của session (để initial load)
+  async getLatestMessages(sessionId: string | number): Promise<PaginatedMessagesResponse> {
+    try {
+      const request = new Request(`${environment.apiUrlV1}/api/Chat/session/${sessionId}/messages/latest`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // credentials: 'include',
+      });
+
+      const response = await fetch(request);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data: ApiResponse<PaginatedMessagesResponse> = await response.json();
+      console.log('Latest messages response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Lấy tin nhắn mới nhất thất bại');
+      }
+      
+      return data.data;
+    } catch (error) {
+      console.error('Error in getLatestMessages:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Không thể lấy tin nhắn mới nhất: ${errorMessage}`);
+    }
+  }
+
+  // Lấy tin nhắn trước một message ID cụ thể (để load more)
+  async getMessagesBefore(sessionId: string | number, beforeMessageId: number): Promise<PaginatedMessagesResponse> {
+    try {
+      const request = new Request(`${environment.apiUrlV1}/api/Chat/session/${sessionId}/messages/before/${beforeMessageId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // credentials: 'include',
+      });
+
+      const response = await fetch(request);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data: ApiResponse<PaginatedMessagesResponse> = await response.json();
+      console.log('Messages before response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Lấy tin nhắn trước đó thất bại');
+      }
+      
+      return data.data;
+    } catch (error) {
+      console.error('Error in getMessagesBefore:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Không thể lấy tin nhắn trước đó: ${errorMessage}`);
+    }
+  }
+
+  // Lấy danh sách tin nhắn theo session (legacy method - deprecated)
   async getMessagesBySession(sessionId: string | number): Promise<ChatMessage[]> {
-    const request = new Request(`/api/chat/session/${sessionId}/messages`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    const response = await fetch(request);
-    if (!response.ok) {
-      throw new Error(`Không thể lấy tin nhắn: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('Raw API response:', data);
+    console.warn('getMessagesBySession is deprecated, use getLatestMessages instead');
     
-    // Kiểm tra cấu trúc response
-    if (data.success && data.data) {
-      console.log('Messages data:', data.data);
-      // Nếu data.data là array
-      if (Array.isArray(data.data)) {
-        return data.data;
+    try {
+      const result = await this.getLatestMessages(sessionId);
+      return result.messages;
+    } catch (error) {
+      console.warn('Fallback to old API endpoint');
+      // Fallback to old endpoint if new one fails
+      const request = new Request(`${environment.apiUrlV1}/api/Chat/session/${sessionId}/messages`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // credentials: 'include',
+      });
+
+      const response = await fetch(request);
+      if (!response.ok) {
+        throw new Error(`Không thể lấy tin nhắn: ${response.statusText}`);
       }
-      // Nếu data.data có property messages
-      if (data.data.messages && Array.isArray(data.data.messages)) {
-        return data.data.messages;
+
+      const data = await response.json();
+      console.log('Legacy API response:', data);
+      
+      // Kiểm tra cấu trúc response
+      if (data.success && data.data) {
+        if (Array.isArray(data.data)) {
+          return data.data;
+        }
+        if (data.data.messages && Array.isArray(data.data.messages)) {
+          return data.data.messages;
+        }
       }
+      
+      return [];
     }
-    
-    // Fallback: trả về array rỗng nếu không có data
-    console.warn('No messages found or invalid format:', data);
-    return [];
   }
 
   // Lấy suggestions cho câu hỏi tiếp theo

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { environment } from '@/environments/environment'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     
     console.log('Getting or creating session for user:', userId)
     
-    const response = await fetch('http://192.168.10.135:8001/api/Chat/session/get-or-create', {
+    const response = await fetch(`${environment.apiUrlV1}/api/Chat/session/get-or-create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -3,6 +3,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
 import { NextRequest, NextResponse } from 'next/server'
 import https from 'https'
+import { environment } from '@/environments/environment'
 
 // Create HTTPS agent that ignores SSL certificate errors
 const httpsAgent = new https.Agent({
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     console.log('Sending message to chat API:', requestData)
     
     // Use fetch with custom agent for HTTPS
-    const response = await fetch('http://192.168.10.135:8001/api/Chat/message', {
+    const response = await fetch(`${environment.apiUrlV1}/api/Chat/message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

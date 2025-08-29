@@ -48,3 +48,11 @@ export interface MessagesResponse {
   messages: ChatMessage[]
   count: number
 }
+
+export interface PaginatedMessagesResponse {
+  messages: ChatMessage[]
+  count: number
+  hasMore: boolean
+  nextBeforeMessageId: number | null
+  paginationInfo: string
+}

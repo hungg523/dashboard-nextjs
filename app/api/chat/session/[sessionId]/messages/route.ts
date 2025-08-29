@@ -3,6 +3,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
 import { NextRequest, NextResponse } from 'next/server'
 import https from 'https'
+import { environment } from '@/environments/environment'
 
 // Create HTTPS agent that ignores SSL certificate errors
 const httpsAgent = new https.Agent({
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: { sessionI
     
     console.log('Fetching messages for session:', sessionId)
     
-    const response = await fetch(`http://192.168.10.135:8001/api/Chat/session/${sessionId}/messages`, {
+    const response = await fetch(`${environment.apiUrlV1}/api/Chat/session/${sessionId}/messages`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,9 +10,9 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Send, Bot, User, RefreshCw, MessageCircle, Minimize2, Maximize2, X, Settings, ChevronDown, MoreHorizontal, ThumbsUp, ThumbsDown, Star } from 'lucide-react'
+import { Send, Bot, User, RefreshCw, MessageCircle, Minimize2, Maximize2, X, Settings, ChevronDown, MoreHorizontal, ThumbsUp, ThumbsDown, Star, Loader2 } from 'lucide-react'
 import { ChatMessage, ChatResponse, ApiResponse, MessagesResponse, ChatSession } from '@/types/chat'
-import { chatService, SuggestionResponse } from '@/services'
+import { chatService, SuggestionResponse, PaginatedMessagesResponse } from '@/services'
 import SessionModal from './SessionModal'
 
 interface ChatBotProps {
@@ -41,9 +41,16 @@ const ChatBot = forwardRef<ChatBotRef, ChatBotProps>(({ sessionId: initialSessio
   const [feedbackComment, setFeedbackComment] = useState('')
   const [suggestions, setSuggestions] = useState<SuggestionResponse | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
+  
+  // Infinite scroll states
+  const [hasMoreMessages, setHasMoreMessages] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [nextBeforeMessageId, setNextBeforeMessageId] = useState<number | null>(null)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const messagesTopRef = useRef<HTMLDivElement>(null)
 
   // Danh sách câu hỏi phổ biến
   const popularQuestions = [
@@ -55,8 +62,18 @@ const ChatBot = forwardRef<ChatBotRef, ChatBotProps>(({ sessionId: initialSessio
     "Tôi cần quyền truy cập vào Phiếu xuất hàng"
   ]
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToBottom = (forceInstant = false) => {
+    try {
+      if (messagesEndRef.current) {
+        const behavior = forceInstant ? 'instant' : 'smooth'
+        messagesEndRef.current.scrollIntoView({ behavior: behavior as ScrollBehavior })
+        console.log('Scrolled to bottom with behavior:', behavior)
+      } else {
+        console.warn('messagesEndRef is not available')
+      }
+    } catch (error) {
+      console.error('Error scrolling to bottom:', error)
+    }
   }
 
   // Theo dõi scroll để hiển thị nút scroll to bottom
@@ -70,6 +87,7 @@ const ChatBot = forwardRef<ChatBotRef, ChatBotProps>(({ sessionId: initialSessio
   }
 
   // Effect để theo dõi scroll trong ScrollArea
+  // Scroll event handler với infinite scroll support
   useEffect(() => {
     const scrollElement = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement
     
@@ -77,13 +95,48 @@ const ChatBot = forwardRef<ChatBotRef, ChatBotProps>(({ sessionId: initialSessio
       const handleScrollEvent = () => {
         const { scrollTop, scrollHeight, clientHeight } = scrollElement
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+        const isNearTop = scrollTop < 50
+        
+        // Show scroll to bottom button
         setShowScrollToBottom(!isNearBottom && messages.length > 0)
+        
+        // Load more messages when scrolled near top
+        if (isNearTop && hasMoreMessages && !isLoadingMore && !isLoading) {
+          console.log('Near top, loading more messages...')
+          loadMoreMessages()
+        }
       }
       
       scrollElement.addEventListener('scroll', handleScrollEvent)
       return () => scrollElement.removeEventListener('scroll', handleScrollEvent)
     }
-  }, [messages.length])
+  }, [messages.length, hasMoreMessages, isLoadingMore, isLoading])
+
+  // Auto scroll to bottom chỉ khi typing status changes (không scroll khi có messages mới)
+  useEffect(() => {
+    if (isTyping) {
+      // Delay scroll để đảm bảo DOM đã render xong
+      const timeoutId = setTimeout(() => {
+        scrollToBottom()
+      }, 200)
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [isTyping])
+
+  // Load messages when session changes
+  useEffect(() => {
+    if (currentSession) {
+      console.log('Loading messages for session:', currentSession.id)
+      loadLatestMessages().then(() => {
+        // Scroll to bottom sau khi load messages xong
+        setTimeout(() => {
+          console.log('Force scrolling to bottom after session change')
+          scrollToBottom(true)
+        }, 500)
+      })
+    }
+  }, [currentSession])
 
   // Hàm mở modal feedback
   const openFeedbackModal = (messageId: number) => {
@@ -161,34 +214,82 @@ const ChatBot = forwardRef<ChatBotRef, ChatBotProps>(({ sessionId: initialSessio
     }
   }, [sessionId, currentSession])
 
-  // Load lại messages từ server
-  const reloadMessages = async () => {
+  // Load tin nhắn mới nhất (initial load)
+  const loadLatestMessages = async () => {
     if (!currentSession) return
 
     try {
       setIsLoading(true)
       setError(null)
       
-      const messages = await chatService.getMessagesBySession(currentSession.id)
-      console.log('API Response messages:', messages)
-      console.log('Is array?', Array.isArray(messages))
-      console.log('Length:', messages?.length || 0)
+      const result = await chatService.getLatestMessages(currentSession.id)
+      console.log('Latest messages result:', result)
       
-      // Đảm bảo messages là array
-      const messagesArray = Array.isArray(messages) ? messages : []
-      setMessages(messagesArray)
+      // Sử dụng tin nhắn theo thứ tự API trả về (mới nhất ở cuối)
+      setMessages(result.messages)
+      setHasMoreMessages(result.hasMore)
+      setNextBeforeMessageId(result.nextBeforeMessageId)
       
-      console.log(`Đã reload ${messagesArray.length} tin nhắn`)
-      console.log('Current messages state:', messagesArray)
+      console.log(`Đã load ${result.messages.length} tin nhắn mới nhất`)
+      console.log('Has more messages:', result.hasMore)
+      console.log('Next before ID:', result.nextBeforeMessageId)
+      
+      // Scroll to bottom sau khi load xong - tăng timeout để đảm bảo DOM render
+      setTimeout(() => scrollToBottom(true), 300)
+      
     } catch (err) {
-      console.error('Error reloading messages:', err)
+      console.error('Error loading latest messages:', err)
       const errorMsg = err instanceof Error ? err.message : 'Có lỗi xảy ra khi tải tin nhắn'
       setError(errorMsg)
-      // Set empty array nếu có lỗi
       setMessages([])
+      setHasMoreMessages(false)
+      setNextBeforeMessageId(null)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Load thêm tin nhắn cũ hơn (infinite scroll)
+  const loadMoreMessages = async () => {
+    if (!currentSession || !hasMoreMessages || !nextBeforeMessageId || isLoadingMore) return
+
+    try {
+      setIsLoadingMore(true)
+      
+      // Lưu scroll position để anchor
+      const scrollArea = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement
+      const scrollHeightBefore = scrollArea?.scrollHeight || 0
+      const scrollTopBefore = scrollArea?.scrollTop || 0
+      
+      const result = await chatService.getMessagesBefore(currentSession.id, nextBeforeMessageId)
+      console.log('Load more messages result:', result)
+      
+      // Thêm tin nhắn cũ vào đầu danh sách (API đã trả về đúng thứ tự)
+      setMessages(prev => [...result.messages, ...prev])
+      setHasMoreMessages(result.hasMore)
+      setNextBeforeMessageId(result.nextBeforeMessageId)
+      
+      console.log(`Đã load thêm ${result.messages.length} tin nhắn`)
+      
+      // Scroll anchoring: giữ vị trí tương đối
+      setTimeout(() => {
+        if (scrollArea) {
+          const scrollHeightAfter = scrollArea.scrollHeight
+          const heightDifference = scrollHeightAfter - scrollHeightBefore
+          scrollArea.scrollTop = scrollTopBefore + heightDifference
+        }
+      }, 50)
+      
+    } catch (err) {
+      console.error('Error loading more messages:', err)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
+
+  // Legacy reload messages (để tương thích ngược)
+  const reloadMessages = async () => {
+    await loadLatestMessages()
   }
 
   // Xử lý khi session được tạo từ modal
@@ -312,6 +413,8 @@ const ChatBot = forwardRef<ChatBotRef, ChatBotProps>(({ sessionId: initialSessio
       setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsTyping(false)
+      // Scroll to bottom sau khi hoàn thành gửi tin nhắn (bao gồm cả bot response)
+      setTimeout(() => scrollToBottom(), 100)
     }
   }
 
@@ -528,6 +631,17 @@ const ChatBot = forwardRef<ChatBotRef, ChatBotProps>(({ sessionId: initialSessio
             ref={scrollAreaRef}
           >
             <div className="space-y-4 pr-3">
+              {/* Load more indicator at top */}
+              <div ref={messagesTopRef}></div>
+              {isLoadingMore && (
+                <div className="flex justify-center items-center py-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Đang tải thêm tin nhắn...
+                  </div>
+                </div>
+              )}
+              
               {(!Array.isArray(messages) || messages.length === 0) && !isLoading && !currentSession && (
                 <div className="text-center text-gray-500 py-12">
                   <div className="relative mx-auto w-16 h-16 mb-6">
@@ -583,15 +697,6 @@ const ChatBot = forwardRef<ChatBotRef, ChatBotProps>(({ sessionId: initialSessio
                         </button>
                       ))}
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {Array.isArray(messages) && messages.length > 0 && currentSession && (
-                <div className="text-center py-2 mb-4">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-full text-xs text-green-700">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    Đã tải {messages.length} tin nhắn từ session {currentSession.id}
                   </div>
                 </div>
               )}
@@ -695,7 +800,7 @@ const ChatBot = forwardRef<ChatBotRef, ChatBotProps>(({ sessionId: initialSessio
             {/* Nút scroll to bottom */}
             {showScrollToBottom && (
               <Button
-                onClick={scrollToBottom}
+                onClick={() => scrollToBottom()}
                 size="sm"
                 className="absolute bottom-2 right-2 z-10 h-8 w-8 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg border-2 border-white"
                 variant="default"
