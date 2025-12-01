@@ -1247,7 +1247,7 @@ async function handleStreamingMessage(message) {
             
             // Hien thi thoi gian phan hoi neu co trong metadata
             if (result.data.metadata && result.data.metadata.ProcessingTimeMs) {
-                console.log('✅ Hien thi thoi gian phan hoi');
+                console.log(' Hien thi thoi gian phan hoi');
                 const processingTimeMs = result.data.metadata.ProcessingTimeMs;
                 const processingTimeSec = result.data.metadata.ProcessingTimeSec || (processingTimeMs / 1000).toFixed(2);
                 content += `<div class="message-response-time">
