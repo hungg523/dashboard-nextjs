@@ -140,16 +140,6 @@ function DashboardContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-slate-500" id="session-info">Chưa có phiên làm việc</span>
-                <button id="new-session-btn" className="px-3 py-1.5 bg-blue-50 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors">
-                  Phiên mới
-                </button>
-                <button className="relative p-1.5 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
-                  <i data-lucide="bell" className="w-5 h-5 stroke-[1.5]"></i>
-                  <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                </button>
-              </div>
             </header>
 
             <div className="flex-1 overflow-y-auto p-6">
@@ -184,7 +174,7 @@ function DashboardContent() {
                     </div>
                   </div>
                   <div className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
-                    <span className="text-sm font-medium text-blue-700" id="current-period-label">Tháng 11/2025</span>
+                    <span className="text-sm font-medium text-blue-700" id="current-period-label">Tháng 12/2025</span>
                   </div>
                 </div>
               </div>

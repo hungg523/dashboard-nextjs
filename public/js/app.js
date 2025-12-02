@@ -11,9 +11,9 @@ const API_ENDPOINTS = {
     dashboardKPI: `${API_BASE_URL}/api/dashboard/kpi-summary`,
     dashboardAISummary: `${API_BASE_URL}/api/dashboard/ai-summary`,
     dashboardBase: `${API_BASE_URL}/api/dashboard`,
-    taskReminderSuggestions: (userId, period) => `${API_BASE_URL}/api/taskreminder/suggestions?userId=${userId}&period=${period}`,
-    taskReminderRefresh: (userId, period) => `${API_BASE_URL}/api/taskreminder/refresh?userId=${userId}&period=${period}`,
-    taskReminderAssignments: (userId, period) => `${API_BASE_URL}/api/taskreminder/assignments?userId=${userId}&period=${period}`
+    taskReminderSuggestions: (userId, period) => `${API_BASE_URL}/api/task-reminder/suggestions?userId=${userId}&period=${period}`,
+    taskReminderRefresh: (userId, period) => `${API_BASE_URL}/api/task-reminder/refresh?userId=${userId}&period=${period}`,
+    taskReminderAssignments: (userId, period) => `${API_BASE_URL}/api/task-reminder/assignments?userId=${userId}&period=${period}`
 };
 
 // Period Selection Function - Must be defined early for HTML onclick handlers
@@ -994,16 +994,6 @@ function createMessageElement(msg) {
     return null;
 }
 
-// Update Session Info
-function updateSessionInfo() {
-    if (currentSession) {
-        const sessionDate = new Date(currentSession.createdAt).toLocaleString('vi-VN');
-        sessionInfo.textContent = `Phiên: ${currentSession.id} - ${sessionDate}`;
-    } else {
-        sessionInfo.textContent = 'Chưa có phiên làm việc';
-    }
-}
-
 // Start New Session
 async function startNewSession() {
     // Clear messages and show welcome
@@ -1034,11 +1024,6 @@ async function handleSendMessage() {
     if (isSendingMessage) {
         console.log('Already sending a message, ignoring duplicate request');
         return;
-    }
-    
-    if (!currentSession) {
-        addErrorMessage('Chưa có phiên làm việc. Đang tạo phiên mới...');
-        await createSession();
     }
 
     // Set sending flag

@@ -10,11 +10,11 @@ export const API_ENDPOINTS = {
   
   // Task Reminders
   taskReminderSuggestions: (userId: number, period: string) => 
-    `${API_BASE_URL}/api/taskreminder/suggestions?userId=${userId}&period=${period}`,
+    `${API_BASE_URL}/api/task-reminder/suggestions?userId=${userId}&period=${period}`,
   taskReminderRefresh: (userId: number, period: string) => 
-    `${API_BASE_URL}/api/taskreminder/refresh?userId=${userId}&period=${period}`,
+    `${API_BASE_URL}/api/task-reminder/refresh?userId=${userId}&period=${period}`,
   taskReminderAssignments: (userId: number, period: string) => 
-    `${API_BASE_URL}/api/taskreminder/assignments?userId=${userId}&period=${period}`,
+    `${API_BASE_URL}/api/task-reminder/assignments?userId=${userId}&period=${period}`,
   
   // Dashboard Charts
   topDepartments: `${API_BASE_URL}/api/dashboard/top-departments`,

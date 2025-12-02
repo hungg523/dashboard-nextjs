@@ -24,7 +24,7 @@ export function useTaskReminders(period: string) {
 
         const user = JSON.parse(currentUser)
         const response = await fetch(
-          `/api/taskreminder/suggestions?userId=${user.id}&period=${period}`
+          `/api/task-reminder/suggestions?userId=${user.id}&period=${period}`
         )
 
         if (response.ok) {
