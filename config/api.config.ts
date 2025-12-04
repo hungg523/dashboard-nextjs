@@ -4,8 +4,8 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 // API Endpoints
 export const API_ENDPOINTS = {
   // Dashboard
-  dashboardKPI: `${API_BASE_URL}/api/dashboard/kpi-summary`,
-  dashboardAISummary: `${API_BASE_URL}/api/dashboard/ai-summary`,
+  dashboardKPI: (period: string) => `${API_BASE_URL}/api/dashboard/kpi-summary?period=${period}`,
+  dashboardAISummary: (period: string) => `${API_BASE_URL}/api/dashboard/ai-summary?period=${period}`,
   dashboardBase: `${API_BASE_URL}/api/dashboard`,
   
   // Task Reminders
@@ -15,6 +15,12 @@ export const API_ENDPOINTS = {
     `${API_BASE_URL}/api/task-reminder/refresh?userId=${userId}&period=${period}`,
   taskReminderAssignments: (userId: number, period: string) => 
     `${API_BASE_URL}/api/task-reminder/assignments?userId=${userId}&period=${period}`,
+  taskReminderPriorityAnalysis: (userId: number, period: string) => 
+    `${API_BASE_URL}/api/task-reminder/priority-analysis?userId=${userId}&period=${period}`,
+  taskReminderTeamAssignments: (managerId: number, period: string) => 
+    `${API_BASE_URL}/api/task-reminder/team/assignments-overview?managerId=${managerId}&period=${period}`,
+  taskReminderTeamPriority: (managerId: number, period: string) => 
+    `${API_BASE_URL}/api/task-reminder/team/priority-analysis-overview?managerId=${managerId}&period=${period}`,
   
   // Dashboard Charts
   topDepartments: `${API_BASE_URL}/api/dashboard/top-departments`,

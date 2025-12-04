@@ -54,8 +54,8 @@ function selectPeriod(period) {
             periodLabel.textContent = `Tháng ${now.getMonth() + 1}/${now.getFullYear()}`;
             break;
         case 'all':
-            filterText.textContent = 'Tất cả';
-            periodLabel.textContent = 'Tất cả thời gian';
+            filterText.textContent = '6 tháng qua';
+            periodLabel.textContent = '6 tháng gần nhất';
             break;
     }
 
@@ -378,7 +378,7 @@ async function refreshTopDepartments(event, year = null, month = null) {
                             <span class="font-medium text-slate-700">${dept.name}</span>
                         </div>
                         <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold">
-                            ${dept.count} phieu
+                            ${dept.count} phiếu
                         </span>
                     </li>
                 `;
@@ -442,7 +442,7 @@ async function refreshTopRequesters(event, year = null, month = null) {
                             <span class="font-medium text-slate-700">${requester.name}</span>
                         </div>
                         <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold">
-                            ${requester.count} phieu
+                            ${requester.count} phiếu
                         </span>
                     </li>
                 `;
